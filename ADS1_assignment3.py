@@ -12,6 +12,7 @@ import pandas as pd
 import sklearn.cluster as cluster
 import sklearn.metrics as skmet
 import warnings
+import scipy.optimize as opt
 
 #Ignore warnings
 warnings.filterwarnings('ignore')
@@ -19,25 +20,15 @@ warnings.filterwarnings('ignore')
 # Defining a function to read a datafile
 def read(datafile):
     """
+    This function is for reading datafile and its transpose and return the
+    functions.
     
-    Parameters
-    ----------
-    datafile : TYPE
-        DESCRIPTION.
-
-    Returns
-    -------
-    df : TYPE
-        DESCRIPTION.
-    df_transpose : TYPE
-        DESCRIPTION.
-
     """
     
     df = pd.read_csv(datafile)
     
     df.drop(['Series Name', 'Series Code', 'Country Code'], axis=1, inplace=True)
-    df_transpose = df.transpose()
+    df_transpose = df.set_index("Country Name").transpose()
     return df, df_transpose
 
 #Reading the csv file to get a return of dataframes
@@ -45,7 +36,8 @@ df_gni, df_gni_transpose = read("GNI_per_capita.csv")
 print(df_gni.describe())
 
 def heat_corr(df_gni, size=10):
-    """Function creates heatmap of correlation matrix for each pair of columns
+    """
+    Function creates heatmap of correlation matrix for each pair of columns
     in the dataframe.
     Input:
         df: pandas DataFrame
@@ -82,10 +74,9 @@ def norm_df(df, first=0, last=None):
     """
    
     # iterate over all numerical columns
-    for col in df.columns[first:last]:     # excluding the first column
+    for col in df.columns[first:last]:
         df[col] = norm(df[col])
-       
-    return df
+        return df
 
 #Calling the function
 heat_corr(df_gni)
@@ -127,3 +118,64 @@ plt.xlabel("2008", fontsize=16)
 plt.ylabel("2018", fontsize=16)
 plt.title("2 clusters", fontsize=22)
 plt.show()
+
+def exp_growth(t, scale, growth):
+    """ 
+    This function is for computing exponential function with scale and growth as free parameters.
+    """
+    f = scale * np.exp(growth * (t-1950))
+    return f
+
+#Reading the csv file to get a return of dataframes
+df_cereal, df_cereal_transpose = read("cereal.csv")
+print(df_cereal.describe())
+
+years = np.array(df_cereal_transpose.index.values)
+Netherlands = np.array(df_cereal_transpose.Netherlands.values)
+
+#fitting exponential growth
+cereal, covar = opt.curve_fit(exp_growth, years,Netherlands)
+print("Fit parameter", cereal)
+
+# use *cereal to pass on the fit parameters
+df_cereal_transpose["cereal_exp"] = exp_growth(Netherlands, *cereal)
+plt.figure()
+plt.plot(years, Netherlands, label="data")
+plt.plot(years, df_cereal_transpose["cereal_exp"], label="fit")
+plt.legend()
+plt.title("First fit attempt")
+plt.xlabel("Years")
+plt.ylabel("Cereal yield of Netherlands")
+plt.show()
+print()
+ 
+# find a feasible start value the pedestrian way
+# the scale factor is way too small. The exponential factor too large.
+# Try scaling with the 1950 population and a smaller exponential factor
+# decrease or increase exponential factor until rough agreement is reached
+# growth of 0.02 gives a reasonable start value
+cereal = [3e4, 700]
+df_cereal_transpose["cereal_exp"] = exp_growth(Netherlands, *cereal)
+plt.figure()
+plt.plot(years, Netherlands, label="data")
+plt.plot(years, df_cereal_transpose["cereal_exp"], label="fit")
+plt.legend()
+plt.xlabel("Years")
+plt.ylabel("Cereal yield of Netherlands")
+plt.title("Improved start value")
+plt.show()
+
+# fitting exponential growth
+cereal, covar = opt.curve_fit(exp_growth, years,Netherlands, p0=[3e4, 700])
+# much better
+print("Fit parameter", cereal)
+df_cereal_transpose["cereal_exp"] = exp_growth(Netherlands, *cereal)
+plt.figure()
+plt.plot(years, Netherlands, label="data")
+plt.plot(years, df_cereal_transpose["cereal_exp"], label="fit")
+plt.legend()
+plt.xlabel("Years")
+plt.ylabel("Cereal yield of Netherlands")
+plt.title("Final fit exponential growth")
+plt.show()
+print()
