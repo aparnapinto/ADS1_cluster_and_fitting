@@ -131,51 +131,46 @@ df_cereal, df_cereal_transpose = read("cereal.csv")
 print(df_cereal.describe())
 
 years = np.array(df_cereal_transpose.index.values)
-Netherlands = np.array(df_cereal_transpose.Netherlands.values)
+Argentina = np.array(df_cereal_transpose.Argentina.values)
 
 #fitting exponential growth
-cereal, covar = opt.curve_fit(exp_growth, years,Netherlands)
+cereal, covar = opt.curve_fit(exp_growth, years,Argentina)
 print("Fit parameter", cereal)
 
 # use *cereal to pass on the fit parameters
-df_cereal_transpose["cereal_exp"] = exp_growth(Netherlands, *cereal)
+df_cereal_transpose["cereal_exp"] = exp_growth(Argentina, *cereal)
 plt.figure()
-plt.plot(years, Netherlands, label="data")
+plt.plot(years, Argentina, label="data")
 plt.plot(years, df_cereal_transpose["cereal_exp"], label="fit")
 plt.legend()
 plt.title("First fit attempt")
 plt.xlabel("Years")
-plt.ylabel("Cereal yield of Netherlands")
+plt.ylabel("Cereal yield of Argentina")
 plt.show()
 print()
  
-# find a feasible start value the pedestrian way
-# the scale factor is way too small. The exponential factor too large.
-# Try scaling with the 1950 population and a smaller exponential factor
-# decrease or increase exponential factor until rough agreement is reached
-# growth of 0.02 gives a reasonable start value
-cereal = [3e4, 700]
-df_cereal_transpose["cereal_exp"] = exp_growth(Netherlands, *cereal)
+cereal = [-0.5, 0]
+df_cereal_transpose["cereal_exp"] = exp_growth(Argentina, *cereal)
 plt.figure()
-plt.plot(years, Netherlands, label="data")
+plt.plot(years, Argentina, label="data")
 plt.plot(years, df_cereal_transpose["cereal_exp"], label="fit")
 plt.legend()
 plt.xlabel("Years")
-plt.ylabel("Cereal yield of Netherlands")
+plt.ylabel("Cereal yield of Argentina")
 plt.title("Improved start value")
 plt.show()
 
 # fitting exponential growth
-cereal, covar = opt.curve_fit(exp_growth, years,Netherlands, p0=[3e4, 700])
+cereal, covar = opt.curve_fit(exp_growth, years,Argentina, p0=[-0.5, 0])
 # much better
 print("Fit parameter", cereal)
-df_cereal_transpose["cereal_exp"] = exp_growth(Netherlands, *cereal)
+df_cereal_transpose["cereal_exp"] = exp_growth(Argentina, *cereal)
 plt.figure()
-plt.plot(years, Netherlands, label="data")
+plt.plot(years, Argentina, label="data")
 plt.plot(years, df_cereal_transpose["cereal_exp"], label="fit")
 plt.legend()
 plt.xlabel("Years")
-plt.ylabel("Cereal yield of Netherlands")
+plt.ylabel("Cereal yield of Argentina")
 plt.title("Final fit exponential growth")
 plt.show()
 print()
